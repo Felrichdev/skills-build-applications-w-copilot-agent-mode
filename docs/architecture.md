@@ -28,22 +28,28 @@ OctoFit Tracker is a three-tier application for a school fitness program. The st
 
 ## Implementation decisions
 
-Record your plan here before editing code.
-
-- Presentation tier decision:
-- Logic tier decision:
-- Data tier decision:
-- Activity tracking approach:
-- Team management approach:
-- Leaderboard approach:
-- Workout suggestions approach:
+- Presentation tier decision: Keep the UI as a thin React client that renders route-based pages for activities, teams, leaderboard, and workout suggestions. It should fetch from relative `/api` endpoints, render accessible loading/empty/error states, and avoid business logic beyond component state and presentation.
+- Logic tier decision: Keep the Express app as the contract boundary: route handlers translate HTTP requests to service functions, enforce status codes and validation errors, and centralize logic for team validation, leaderboard aggregation, and workout recommendation ranking.
+- Data tier decision: Use MongoDB-backed Mongoose models with required fields and references for `User`, `Team`, `Activity`, and `Workout`; seed data should be idempotent and preserve unrelated records so demo fixtures can be re-run safely.
+- Activity tracking approach: Accept `userId`, `teamId`, `type`, and `minutes`; validate that IDs are valid ObjectIds and that users/teams exist before creating an activity. Store the original refs, compute `points` from minutes, and set `occurredAt` automatically so the API contract remains consistent.
+- Team management approach: Require `name` and `mascot` on creation, initialize `members` to an empty array by default, and preserve member IDs as references to `User` documents without allowing invalid payload shapes.
+- Leaderboard approach: Aggregate `Activity` totals by team, sum `points`, sort descending, and assign 1-based ranks sequentially. The API should return `{ teamName, totalPoints, rank }` objects with no client-side sorting assumptions.
+- Workout suggestions approach: Match the `:userEmail` route param to a seeded user, inspect that user's goal and recent activity patterns, then rank workouts by focus relevance. The first suggestion should align with the user's goal or recent activity; unknown users should respond with a deliberate 4xx.
 
 ## Test plan
 
-Record the commands you run and what each failure means.
-
 - Data-tier command: `npm run test:data --prefix octofit-tracker/backend`
+  - Fails when Mongoose schemas do not enforce required fields or relationships, or when the seed script does not remain idempotent.
+  - This is the fastest signal that the data contract is broken before any API or UI work begins.
 - API command: `npm run test:api --prefix octofit-tracker/backend`
+  - Fails when route handlers still return `501`/empty arrays, when validation is missing, or when leaderboard/suggestion logic does not match the contract.
+  - It confirms the service layer is actually implementing the HTTP-level behavior expected by the app.
 - Frontend command: `npm test --prefix octofit-tracker/frontend`
+  - Fails when the React pages do not fetch the correct endpoints, do not render content from the API, or do not provide loading/empty/error states.
+  - It validates that the presentation layer matches the contract for accessible UI feedback and data rendering.
 - Backend build command: `npm run build --prefix octofit-tracker/backend`
+  - Fails on TypeScript or Express incompatibilities after model/service changes.
+  - This catches compile-time issues before the app runtime is exercised.
 - Frontend build command: `npm run build --prefix octofit-tracker/frontend`
+  - Fails on TypeScript or Vite issues in the React app after route or component changes.
+  - This verifies the presentation layer still builds cleanly after the fetch-driven implementation is added.
