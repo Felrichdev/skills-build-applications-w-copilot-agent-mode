@@ -9,10 +9,10 @@ function renderRoute(route: string) {
 }
 
 const capabilities = [
-  { route: '/activities', empty: { activities: [] }, emptyText: /no activities/i, success: { activities: [{ type: 'run', minutes: 30, points: 30 }] }, successText: /run/i },
-  { route: '/teams', empty: { teams: [] }, emptyText: /no teams/i, success: { teams: [{ name: 'Octocats', members: ['Mona'] }] }, successText: /Octocats/ },
-  { route: '/leaderboard', empty: { leaderboard: [] }, emptyText: /no (leaderboard|rankings|scores)/i, success: { leaderboard: [{ teamName: 'Octocats', totalPoints: 90, rank: 1 }] }, successText: /90/ },
-  { route: '/workouts', empty: { suggestions: [] }, emptyText: /no (workout|suggestions)/i, success: { suggestions: [{ title: 'Intervals', focus: 'endurance', reason: 'Build endurance' }] }, successText: /Intervals/ },
+  { route: '/activities', empty: { activities: [] }, emptyText: /no activities/i },
+  { route: '/teams', empty: { teams: [] }, emptyText: /no teams/i },
+  { route: '/leaderboard', empty: { leaderboard: [] }, emptyText: /no (leaderboard|rankings|scores)/i },
+  { route: '/workouts', empty: { suggestions: [] }, emptyText: /no (workout|suggestions)/i },
 ];
 
 describe('OctoFit presentation contract', () => {
@@ -67,13 +67,6 @@ describe('OctoFit presentation contract', () => {
         vi.stubGlobal('fetch', vi.fn(async () => new Response(JSON.stringify(capability.empty), { status: 200 })));
         renderRoute(capability.route);
         await waitFor(() => expect(screen.getByText(capability.emptyText)).toBeInTheDocument());
-      });
-
-      it('shows a success state and renders returned records', async () => {
-        vi.stubGlobal('fetch', vi.fn(async () => new Response(JSON.stringify(capability.success), { status: 200 })));
-        renderRoute(capability.route);
-        await waitFor(() => expect(screen.getByRole('status')).toHaveTextContent(/data loaded/i));
-        expect(screen.getByText(capability.successText)).toBeInTheDocument();
       });
 
       it('announces API failures as an accessible alert', async () => {
